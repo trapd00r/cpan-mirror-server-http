@@ -105,6 +105,9 @@ unknown =>
   PD+XDJqAgSQ4EUCGQQEJADs=',
 );
 
+my @extension_icons = grep{!/(?:unknown|text|folder|compressed|blank|back)/}
+  keys %icons_encoded;
+
 my %icons = map { ( $_ => decode_base64( $icons_encoded{$_} ) ) }
               keys %icons_encoded;
 
@@ -154,9 +157,10 @@ sub _handle_request {
   REQ: while (my $req = $conn->get_request) {
     if ($req->method eq 'GET' ) {
       # Special case /icons
+      #TODO use the @extension_icons array here
       if ( my ($icon) = $req->uri->path =~ m{
-          ^/icons/(back|blank|compressed|folder|mkv|flv|unknown)\.gif$
-        }ix ) {
+          ^/icons/(back|blank|compressed|folder|unknown|mkv|flv)\.gif$
+        }x ) {
 
         my $resp = _gen_icon( $icon );
         $conn->send_response( $resp );
@@ -197,7 +201,7 @@ sub _gen_dir {
 
   {
     opendir my $DIR, $path or die "$!\n";
-  
+
     $dir{ $_ } = [ ( stat( File::Spec->catfile( $path, $_ ) ) )[7,9],
                    ( -d File::Spec->catfile( $path, $_ ) ? 1 : 0 ),
                  ] for grep { !/^\./ } readdir $DIR;
@@ -208,9 +212,9 @@ sub _gen_dir {
   my @data;
   foreach my $item ( sort keys %dir ) {
     my $data = $dir{$item};
-    push @data, [ 
-      $h->td( { valign => 'top' }, 
-        [ $h->img({ src => '/icons/' . _guess_type( $data->[2], $item ), 
+    push @data, [
+      $h->td( { valign => 'top' },
+        [ $h->img({ src => '/icons/' . _guess_type( $data->[2], $item ),
             alt => ( $data->[2] ? '[DIR]' : '[   ]' ) }) ],
         [ $h->a( { href => ( $data->[2] ? "$item/" : $item ) }, $item ) ],
         { align => 'right' },
@@ -234,9 +238,9 @@ sub _gen_dir {
     }
   }
 
-  unshift @data, 
-    [ $h->td( { valign => 'top' }, 
-      [ $h->img({ src => '/icons/back.gif', alt => '[DIR]' }) ], 
+  unshift @data,
+    [ $h->td( { valign => 'top' },
+      [ $h->img({ src => '/icons/back.gif', alt => '[DIR]' }) ],
       [ $h->a( { href => $parent }, 'Parent Directory' ) ],
       ' ',
       '  - ', )
@@ -245,14 +249,14 @@ sub _gen_dir {
 
   my $html = $h->html(
     [
-      $h->head( $h->title( 'No porn in ' . $uri->path ) ),
-      $h->body( 
+      $h->head( $h->title( 'Index of ' . $uri->path ) ),
+      $h->body(
         [
-          $h->h1( "There's no porn here "),
+          $h->h1( 'Index of ' . $uri->path ),
           $h->table(
             [
               $h->tr(
-                [ $h->th( [ $h->img({ src => '/icons/blank.gif', alt => '[ICO]' }) ], 
+                [ $h->th( [ $h->img({ src => '/icons/blank.gif', alt => '[ICO]' }) ],
                                 'Name', 'Last modified', 'Size' ) ],
                 [ $h->th( { colspan => 4 }, [ $h->hr() ] ) ],
                 @data,
@@ -291,8 +295,10 @@ sub _guess_type {
   return 'folder.gif' if $flag;
   my $item = shift;
   return 'compressed.gif' if $item =~ m!(\.tar\.gz|\.tar\.bz2|\.tgz|\.zip)$!i;
-  return 'mkv.gif' if $item =~ m|\.mkv$|i;
-  return 'flv.gif' if $item =~ m|\.flv$|i;
+
+  if( ($item =~ m|.+\.(.+)$|) and ($1 ~~ @extension_icons) ) {
+    return "$1.gif";
+  }
   return 'unknown.gif';
 }
 
@@ -304,9 +310,9 @@ sub _gen_301 {
   $resp->header( 'Location' => $path );
   $resp->header( 'Content-Type', 'text/html' );
   $resp->content(
-     $h->html( 
-        [ $h->head( $h->title( '301' ) ), 
-          $h->body( 
+     $h->html(
+        [ $h->head( $h->title( '301' ) ),
+          $h->body(
             [ $h->h1('Moved Permanently'), $h->p( [ 'The document has moved ', $h->a( { href => $path }, 'here' ) ] ), ]
           ),
         ] ),
