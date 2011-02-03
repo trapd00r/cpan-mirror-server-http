@@ -113,13 +113,15 @@ my %icons = map { ( $_ => decode_base64( $icons_encoded{$_} ) ) }
 
 my $index = 'index.html';
 
+my $VERBOSE = $ENV{DEBUG};
 sub run {
   my $root = Cwd::getcwd();
   my $port = '8080';
 
   GetOptions(
-    "root=s", \$root,
-    "port=i", \$port,
+    'root:s'  => \$root,
+    'port:i'  => \$port,
+    'verbose' => \$VERBOSE,
   ) or pod2usage(2);
 
   local $SIG{CHLD};
@@ -166,11 +168,15 @@ sub _handle_request {
         $conn->send_response( $resp );
         next REQ;
       }
+
       my @path = $req->uri->path_segments;
       my $path = File::Spec->catfile( $root, @path );
+
+
       if ( -d $path and $req->uri->path !~ m#/$# ) {
         my $resp = _gen_301( $req->uri );
         $conn->send_response( $resp );
+
         next REQ;
       }
       if ( -d $path and -e File::Spec->catfile( $path, $index ) ) {
@@ -183,7 +189,11 @@ sub _handle_request {
       }
       unless ( -e $path ) {
         $conn->send_error(RC_NOT_FOUND);
+        print "Not found: '$path'\n" if $VERBOSE;
         next REQ;
+      }
+      unless($path =~ m/favicon\.ico/) {
+        print "\e[38;5;22m\e[1m      GET\e[0m: '$path'\n" if $VERBOSE;
       }
       $conn->send_file_response( $path );
     }
@@ -324,10 +334,11 @@ sub _gen_301 {
   return $resp;
 }
 
-q[CPAN Mirror on the wall, who's the fairest of them all?];
 
+1;
 
 __END__
+
 =pod
 
 =head1 NAME
