@@ -14,8 +14,9 @@ exit 0;
  cpanmirrorhttpd [options]
 
  Options:
-    --root   - the webserver root path to use, default to '.'
-    --port   - the port to listen on, default is 8080
+    --root    - the webserver root path to use, default to '.'
+    --port    - the port to listen on, default is 8080
+    --verbose - watch requests
 
 =head1 DESCRIPTION
 
@@ -37,6 +38,10 @@ working directory if it is not supplied.
 
 This is the TCP port that the server will listen on for requests. It defaults to C<8080> if it
 is not supplied.
+
+=item C<--verbose>
+
+This enables verbose mode. See requests as they come along.
 
 =back
 
