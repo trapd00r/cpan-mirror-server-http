@@ -25,6 +25,7 @@ my %WriteMakefileArgs = (
   'LICENSE' => 'perl',
   'NAME' => 'CPAN::Mirror::Server::HTTP',
   'PREREQ_PM' => {
+    'File::LsColor' => '0',
     'File::Spec' => '3.12',
     'Getopt::Long' => '2.35',
     'HTML::Tiny' => '1.05',

@@ -18,6 +18,9 @@ use MIME::Base64 qw[decode_base64];
 use Number::Bytes::Human qw[format_bytes];
 use POSIX qw[strftime :sys_wait_h];
 use Getopt::Long;
+use File::LsColor qw(ls_color);
+
+no warnings 'experimental';
 
 my %icons_encoded = (
 back =>
@@ -193,7 +196,7 @@ sub _handle_request {
         next REQ;
       }
       unless($path =~ m/favicon\.ico/) {
-        print "\e[38;5;22m\e[1m      GET\e[0m: '$path'\n" if $VERBOSE;
+        printf "\e[38;5;22;1m      GET\e[m: '%s'\n", ls_color($path) if $VERBOSE;
       }
       $conn->send_file_response( $path );
     }
